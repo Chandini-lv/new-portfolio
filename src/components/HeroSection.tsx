@@ -71,7 +71,7 @@ export const HeroSection: React.FC = () => {
           muted
           loop
           playsInline
-          className="h-screen w-auto max-w-none object-contain origin-right scale-95 md:scale-[0.98] lg:scale-100"
+          className="h-full w-full max-w-none object-cover object-center md:h-screen md:w-auto md:object-contain md:origin-right md:scale-[0.98] lg:scale-100"
         >
           <source src="/videos/hero.mp4" type="video/mp4" />
         </video>
@@ -219,7 +219,9 @@ export const HeroSection: React.FC = () => {
             >
               {/* Explore My Work CTA */}
               <motion.a
-                href="#work"
+                href="https://www.linkedin.com/in/reddymasu-chandini-63661b23b/details/projects/"
+                target="_blank"
+                rel="noopener noreferrer"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 whileHover={{ scale: 1.02 }}
@@ -234,9 +236,8 @@ export const HeroSection: React.FC = () => {
 
               {/* Download Resume Button */}
               <motion.a
-                href="/resume.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/Chandini_Reddymasu_Resume%20.docx"
+                download="Chandini_Reddymasu_Resume.docx"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 whileHover={{ scale: 1.02 }}

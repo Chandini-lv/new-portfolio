@@ -52,6 +52,7 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
   const initialTopsRef = useRef<number[]>([]);
   const lastTransformsRef = useRef(new Map());
   const isUpdatingRef = useRef(false);
+  const isMobileRef = useRef(false);
 
   const calculateProgress = useCallback((scrollTop: number, start: number, end: number) => {
     if (scrollTop < start) return 0;
@@ -82,7 +83,7 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
   }, [useWindowScroll]);
 
   const updateCardTransforms = useCallback(() => {
-    if (!cardsRef.current.length || isUpdatingRef.current) return;
+    if (isMobileRef.current || !cardsRef.current.length || isUpdatingRef.current) return;
 
     isUpdatingRef.current = true;
 
@@ -218,38 +219,59 @@ const ScrollStack: React.FC<ScrollStackProps> = ({
 
   useLayoutEffect(() => {
     const cards = Array.from(
-      document.querySelectorAll('.scroll-stack-card')
+      scrollerRef.current?.querySelectorAll('.scroll-stack-card') ?? []
     ) as HTMLElement[];
 
     cardsRef.current = cards;
 
-    // Record static natural top positions before any transforms are applied
-    initialTopsRef.current = cards.map((card) => {
-      const rect = card.getBoundingClientRect();
-      return rect.top + window.scrollY;
-    });
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const prepareCards = () => {
+      const isMobile = mobileQuery.matches;
+      isMobileRef.current = isMobile;
+      lastTransformsRef.current.clear();
 
-    cards.forEach((card, i) => {
-      card.style.zIndex = `${i + 1}`;
-      if (i < cards.length - 1) {
-        card.style.marginBottom = `${itemDistance}px`;
+      cards.forEach((card, i) => {
+        card.style.zIndex = isMobile ? '' : `${i + 1}`;
+        card.style.marginBottom = i < cards.length - 1 ? `${itemDistance}px` : '';
+        card.style.willChange = isMobile ? 'auto' : 'transform, filter';
+        card.style.transformOrigin = 'top center';
+        card.style.backfaceVisibility = 'hidden';
+        card.style.transform = isMobile ? 'none' : 'translateZ(0)';
+        card.style.filter = '';
+        card.style.perspective = '1000px';
+      });
+
+      initialTopsRef.current = cards.map((card) => {
+        const rect = card.getBoundingClientRect();
+        return rect.top + window.scrollY;
+      });
+
+      if (isMobile) {
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+        lenisRef.current?.destroy();
+        lenisRef.current = null;
+      } else if (!lenisRef.current) {
+        setupLenis();
       }
-      card.style.willChange = 'transform, filter';
-      card.style.transformOrigin = 'top center';
-      card.style.backfaceVisibility = 'hidden';
-      card.style.transform = 'translateZ(0)';
-      card.style.perspective = '1000px';
-    });
 
-    setupLenis();
-    updateCardTransforms();
+      updateCardTransforms();
+    };
+
+    prepareCards();
+    window.addEventListener('resize', prepareCards);
 
     return () => {
-      if (animationFrameRef.current) {
+      window.removeEventListener('resize', prepareCards);
+      if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
       if (lenisRef.current) {
         lenisRef.current.destroy();
+        lenisRef.current = null;
       }
       stackCompletedRef.current = false;
       cardsRef.current = [];
